@@ -1,0 +1,84 @@
+# optional (docker compose syntax)
+# version: '3.9'
+
+# containers
+services:
+  app:
+    image: my-python-redis
+    build: # docker compose can build image
+      context: .
+      dockerfile: Dockerfile # docker filename optional here
+    container_name: app
+    ports:
+      - 5000:5000
+    networks:
+      - app01
+    # links 
+    # depends_on redis to start first has be ready (not just started)
+    depends_on:
+      db:
+        condition: service_healthy
+    # old restart synntax
+    # restart: always
+    deploy:      
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: ${LIMITS_CPU} 
+          memory: ${LIMITS_MEM} 
+    # log driver / rotate 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: ${LOG_MAX_SIZE} 
+        max-file: ${LOG_MAX_FILE} 
+  db: # service name => default container_name if not spec.  
+    image: redis:alpine # more detailed image def  
+    container_name: db #  => default host_name if not spec.
+    hostname: redis # => spec. hostname 
+    environment:
+      MY_ENV_SECRET_FILE: /run/secrets/my_secret
+    # environment:
+    #   - MY_ENV_SECRET_FILE=/run/secrets/my_secret
+    secrets:
+      - my_secret
+    deploy:      
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: ${LIMITS_CPU} 
+          memory: ${LIMITS_MEM} 
+    # can be more specific on kube / apps => https://developer.ibm.com/tutorials/health-checking-kubernetes-nodejs-application/ 
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 0s
+    networks:
+      - app01
+    # log driver / rotate 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: ${LOG_MAX_SIZE} 
+        max-file: ${LOG_MAX_FILE} 
+# volumes
+
+# networks
+networks:
+  app01:
+    # my explicit network name 
+    # (avoid compose generic names - if I build other scripts...)
+    name: app01 
+
+
+secrets:
+  my_secret:
+    external: true # compose load an existing secret
+  # moins conventionnel 
+  # my_local_secret:
+  #   file: .my_secret.local # compose create the secret himself with provided data 
+

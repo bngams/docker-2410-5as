@@ -1,0 +1,21 @@
+# image deprecated support
+# FROM node:18-alpine
+FROM public.ecr.aws/docker/library/node:20.18.0-bookworm-slim
+
+# Run as a non-privileged user
+FROM node:18
+RUN useradd -ms /bin/sh -u 1001 app
+USER ap
+
+WORKDIR /app
+
+# no cache
+COPY package.json .
+COPY yarn.lock .
+RUN yarn install --production
+
+# copy again package.json, or lock (not so harmless...)
+COPY . .
+
+CMD ["npm", "run", "dev"]
+EXPOSE 3000
