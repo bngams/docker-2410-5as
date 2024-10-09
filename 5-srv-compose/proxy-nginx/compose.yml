@@ -8,6 +8,11 @@ services:
       - 0.0.0.0:8080:80
     networks:
       - public
+    # if want "auto reload / watch on nginx.conf changes"  
+    # develop:
+    #   watch:
+    #     - path: ./nginx.conf
+    #       action: sync+restart
 networks:
   public:
     external: true
